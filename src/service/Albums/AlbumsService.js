@@ -54,7 +54,6 @@ class AlbumsService {
     if (!result.rows.length) {
       throw new NotFoundError('Catatan tidak ditemukan');
     }
-    console.log(result);
   }
 
   async deleteAlbumById(id) {

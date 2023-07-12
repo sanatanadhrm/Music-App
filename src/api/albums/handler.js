@@ -11,7 +11,6 @@ class AlbumsHandler {
     this.__validator.validateAlbumsPayload(request.payload);
     const { name, year } = request.payload;
     const albumid = await this._service.addAlbum({ name, year });
-    console.log(albumid);
     const response = h.response({
       status: 'success',
       massage: 'catatan berhasil',
