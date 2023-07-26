@@ -26,9 +26,9 @@ class ActivitiesService {
   async getActivities(playlistsId) {
     const query = {
       text: `SELECT a.username, b.title, c.action, c.time from users AS a 
-             RIGHT JOIN playlists_songs_activities AS c ON (a.id = c.user_id) 
-             RIGHT JOIN songs AS b ON (b.id = c.song_id) 
-             WHERE c.playlist_id = $1`,
+            JOIN playlists_songs_activities AS c ON (a.id = c.user_id) 
+            JOIN songs AS b ON (b.id = c.song_id) 
+             WHERE c.playlist_id = $1 ORDER BY time`,
       values: [playlistsId],
     };
     const result = await this._pool.query(query);

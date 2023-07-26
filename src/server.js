@@ -1,16 +1,22 @@
-require('dotenv').config();
 const Jwt = require('@hapi/jwt');
 const Hapi = require('@hapi/hapi');
+const Inert = require('@hapi/inert');
+const path = require('path');
 const TokenManager = require('./tokenize/TokenManager');
+const config = require('./utils/config');
 
-const AlbumsService = require('./service/Albums/AlbumsService');
-const SongsService = require('./service/Songs/SongsService');
-const UsersService = require('./service/users/UsersService');
-const AuthenticationsService = require('./service/authentications/AuthenticationsServices');
-const PlaylistsService = require('./service/playlists/PlaylistsService');
-const SongsPlaylistsService = require('./service/SongsPlaylists/SongsPlaylistsService');
-const ActivitiesService = require('./service/Activities/ActivitiesService');
-const CollaborationsService = require('./service/Collaborations/CollaborationsService');
+const AlbumsService = require('./services/Albums/AlbumsService');
+const SongsService = require('./services/Songs/SongsService');
+const UsersService = require('./services/users/UsersService');
+const AuthenticationsService = require('./services/authentications/AuthenticationsServices');
+const PlaylistsService = require('./services/playlists/PlaylistsService');
+const SongsPlaylistsService = require('./services/SongsPlaylists/SongsPlaylistsService');
+const ActivitiesService = require('./services/Activities/ActivitiesService');
+const CollaborationsService = require('./services/Collaborations/CollaborationsService');
+const ProducerService = require('./services/rabbitmq/ProducerService');
+const StorageService = require('./services/Storage/StorageService');
+const LikesAlbums = require('./services/LikesAlbums/LikesAlbumsService');
+const CacheService = require('./services/Redis/CacheService');
 
 const albums = require('./api/albums');
 const songs = require('./api/songs');
@@ -20,6 +26,9 @@ const playlists = require('./api/playlists');
 const songsplaylists = require('./api/songsplaylists');
 const activities = require('./api/activities');
 const collaborations = require('./api/collaborations');
+const _exports = require('./api/exports');
+const uploads = require('./api/uploads');
+const likes = require('./api/likesalbums');
 
 const ClientError = require('./exceptions/ClientError');
 
@@ -30,8 +39,11 @@ const AuthenticationsValidator = require('./validator/authentications');
 const PlaylistsValidator = require('./validator/playlists');
 const SongsPlaylistsValidator = require('./validator/songsplaylists');
 const CollaborationsValidator = require('./validator/collaborations');
+const ExportsValidator = require('./validator/exports');
+const UploadsValidator = require('./validator/storage');
 
 const init = async () => {
+  const cacheService = new CacheService();
   const collaborationsService = new CollaborationsService();
   const albumsService = new AlbumsService();
   const songsService = new SongsService();
@@ -40,9 +52,12 @@ const init = async () => {
   const playlistsService = new PlaylistsService(collaborationsService);
   const songsplaylistsService = new SongsPlaylistsService();
   const activitiesService = new ActivitiesService();
+  const storageService = new StorageService(path.resolve(__dirname, 'api/uploads/file/images'));
+  const likesalbumService = new LikesAlbums(cacheService);
+
   const server = Hapi.server({
-    port: process.env.PORT,
-    host: process.env.HOST,
+    port: config.app.port,
+    host: config.app.host,
     routes: {
       cors: {
         origin: ['*'],
@@ -52,6 +67,9 @@ const init = async () => {
   await server.register([
     {
       plugin: Jwt,
+    },
+    {
+      plugin: Inert,
     },
   ]);
   server.auth.strategy('notesapp_jwt', 'jwt', {
@@ -130,6 +148,28 @@ const init = async () => {
           collaborationsService,
           playlistsService,
           validator: CollaborationsValidator,
+        },
+      },
+      {
+        plugin: _exports,
+        options: {
+          ProducerService,
+          playlistsService,
+          validator: ExportsValidator,
+        },
+      },
+      {
+        plugin: uploads,
+        options: {
+          service: storageService,
+          validator: UploadsValidator,
+        },
+      },
+      {
+        plugin: likes,
+        options: {
+          likesalbumService,
+          albumsService,
         },
       },
     ],

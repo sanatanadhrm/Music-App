@@ -32,18 +32,17 @@ class PlaylistsService {
       values: [owner],
     };
     const result = await this._pool.query(query);
-    console.log(result.rows[0]);
     return result.rows;
   }
 
-  async getPlaylistsById(owner, playlistId) {
+  async getPlaylistsById(playlistId) {
     const query = {
       text: `SELECT a.id, a.name, b.username FROM playlists AS a 
       LEFT JOIN users AS b ON (a.owner = b.id) 
       LEFT JOIN collaborations AS c ON (c.playlists_id = a.id) 
-      WHERE (a.owner = $1 AND a.id = $2) OR 
-      (c.user_id = $1 AND c.playlists_id = $2);`,
-      values: [owner, playlistId],
+      WHERE (a.id = $1) OR 
+      (c.playlists_id = $1);`,
+      values: [playlistId],
     };
     const result = await this._pool.query(query);
     if (!result.rows.length) {

@@ -37,7 +37,7 @@ class SongsPlaylistsHandler {
 
     await this._PlaylistsService.verifyPlaylistAccess(playlistId, owner);
 
-    const playlist = await this._PlaylistsService.getPlaylistsById(owner, playlistId);
+    const playlist = await this._PlaylistsService.getPlaylistsById(playlistId);
     const songs = await this._SongsPlaylistsService.getSongsPlaylistId(playlistId);
     return {
       status: 'success',
